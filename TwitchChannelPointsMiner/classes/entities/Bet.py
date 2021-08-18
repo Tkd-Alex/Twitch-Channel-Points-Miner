@@ -250,7 +250,7 @@ class Bet(object):
                 if both_odds_too_low or is_only_doubt:
                     output += f"{self.get_outcome(0)}\n{self.get_outcome(1)}\n"
                     output += f"Target odd: {self.settings.target_odd}"
-                    return True, output # Skip
+                    return True, output  # Skip
 
             # Check if condition is satisfied
             if condition == Condition.GT:
@@ -272,7 +272,7 @@ class Bet(object):
     def calculate_sho_bet(self, index):
         low_odd_points = self.outcomes[1 - index][OutcomeKeys.TOTAL_POINTS]
         high_odd_points = self.outcomes[index][OutcomeKeys.TOTAL_POINTS]
-        if high_odd_points <= 50: # in case no one bet
+        if high_odd_points <= 50:  # in case no one bet
             return 50
         else:
             target_odd = self.settings.target_odd
