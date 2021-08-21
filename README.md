@@ -215,6 +215,7 @@ twitch_miner = TwitchChannelPointsMiner(
             strategy=Strategy.SMART,            # Choose you strategy!
             percentage=5,                       # Place the x% of your channel points
             percentage_gap=20,                  # Gap difference between outcomesA and outcomesB (for SMART stragegy)
+            target_odd=3,                       # Target odd for SMART_HIGH_ODDS strategy
             max_points=50000,                   # If the x percentage of your channel points is gt bet_max_points set this value
             stealth_mode=True,                  # If the calculated amount of channel points is GT the highest bet, place the highest value minus 1-2 points #33
            delay_mode=DelayMode.FROM_END,       # When placing a bet, we will wait until `delay` seconds before the end of the timer
@@ -348,6 +349,7 @@ ColorPalette(
 | `strategy`         	| Strategy        	| SMART   	| Choose your strategy! See above for more info                                                                  	                                                                          |
 | `percentage`       	| int             	| 5       	| Place the x% of your channel points                                                                            	                                                                          |
 | `percentage_gap`   	| int             	| 20      	| Gap difference between outcomesA and outcomesB (for SMART stragegy)                                            	                                                                          |
+| `target_odd`          | float             | 3         | Target odd for SMART_HIGH_ODDS strategy                                                                                                                       |
 | `max_points`       	| int             	| 50000   	| If the x percentage of your channel points is GT bet_max_points set this value                                 	                                                                          |
 | `stealth_mode`     	| bool            	| False   	| If the calculated amount of channel points is GT the highest bet, place the highest value minus 1-2 points [#33](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/33)      |
 | `join_chat` 	        | bool 	            	| True    	| Join IRC-Chat to appear online in chat and attempt to get StreamElements channel points and increase view-time  [#47](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/47) |
@@ -358,6 +360,7 @@ ColorPalette(
 
 - **MOST_VOTED**: Select the option most voted based on users count
 - **HIGH_ODDS**: Select the option with the highest odds
+- **SMART_HIGH_ODDS**: Select the option with the highest odds if odd is not less than `target_odd`. Also prevents high bets with very high odds.
 - **PERCENTAGE**: Select the option with the highest percentage based on odds (It's the same that show Twitch) - Should be the same as select LOWEST_ODDS
 - **SMART**: If the majority in percent chose an option, then follow the other users, otherwise select the option with the highest odds
 
@@ -367,6 +370,7 @@ Here a concrete example:
 
 - **MOST_VOTED**: 21 Users have select **'over 7.5'**, instead of 9 'under 7.5'
 - **HIGH_ODDS**: The highest odd is 2.27 on **'over 7.5'** vs 1.79 on 'under 7.5'
+- **SMART_HIGH_ODDS**: No bet because highest odd 2.27 is lower than default target odd (3)
 - **PERCENTAGE**: The highest percentage is 56% for **'under 7.5'**
 - **SMART**: Calculate the percentage based on the users. The percentages are: 'over 7.5': 70% and 'under 7.5': 30%. If the difference between the two percentages is higher than `percentage_gap` select the highest percentage, else the highest odds.
 

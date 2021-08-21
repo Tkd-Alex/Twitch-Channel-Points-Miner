@@ -10,6 +10,7 @@ from TwitchChannelPointsMiner.utils import char_decision_as_index, float_round
 class Strategy(Enum):
     MOST_VOTED = auto()
     HIGH_ODDS = auto()
+    SMART_HIGH_ODDS = auto()
     PERCENTAGE = auto()
     SMART = auto()
 
@@ -72,6 +73,8 @@ class BetSettings(object):
         "percentage",
         "percentage_gap",
         "max_points",
+        "target_odd",
+        "only_doubt",
         "stealth_mode",
         "filter_condition",
         "delay",
@@ -84,6 +87,8 @@ class BetSettings(object):
         percentage: int = None,
         percentage_gap: int = None,
         max_points: int = None,
+        target_odd: float = None,
+        only_doubt: bool = None,
         stealth_mode: bool = None,
         filter_condition: FilterCondition = None,
         delay: float = None,
@@ -93,6 +98,8 @@ class BetSettings(object):
         self.percentage = percentage
         self.percentage_gap = percentage_gap
         self.max_points = max_points
+        self.target_odd = target_odd
+        self.only_doubt = only_doubt
         self.stealth_mode = stealth_mode
         self.filter_condition = filter_condition
         self.delay = delay
@@ -103,6 +110,8 @@ class BetSettings(object):
         self.percentage = self.percentage if not None else 5
         self.percentage_gap = self.percentage_gap if not None else 20
         self.max_points = self.max_points if not None else 50000
+        self.target_odd = self.target_odd if not None else 3
+        self.only_doubt = self.only_doubt if not None else False
         self.stealth_mode = self.stealth_mode if not None else False
         self.delay = self.delay if not None else 6
         self.delay_mode = self.delay_mode if not None else DelayMode.FROM_END
@@ -231,6 +240,35 @@ class Bet(object):
                 outcome_index = char_decision_as_index(self.decision["choice"])
                 compared_value = self.outcomes[outcome_index][fixed_key]
 
+            if self.settings.strategy == Strategy.SMART_HIGH_ODDS:
+                if (
+                    self.outcomes[0][OutcomeKeys.TOTAL_POINTS] > 0
+                    and self.outcomes[1][OutcomeKeys.TOTAL_POINTS] == 0
+                ):
+                    return False, "No bet on B."
+                if (
+                    self.outcomes[0][OutcomeKeys.TOTAL_POINTS] == 0
+                    and self.outcomes[1][OutcomeKeys.TOTAL_POINTS] > 0
+                ):
+                    if not self.settings.only_doubt:
+                        return False, "No bet on A."
+                both_odds_too_low = (
+                    self.outcomes[0][OutcomeKeys.ODDS] <= self.settings.target_odd
+                    and self.outcomes[1][OutcomeKeys.ODDS] <= self.settings.target_odd
+                )
+                is_only_doubt = (
+                    self.outcomes[1][OutcomeKeys.ODDS] <= self.settings.target_odd
+                    and self.settings.only_doubt
+                )
+                if both_odds_too_low:
+                    output = "Odd is too low.\n"
+                elif is_only_doubt:
+                    output = "Odd is too low and only_doubt activated.\n"
+                if both_odds_too_low or is_only_doubt:
+                    output += f"{self.get_outcome(0)}\n{self.get_outcome(1)}\n"
+                    output += f"Target odd: {self.settings.target_odd}"
+                    return True, output  # Skip
+
             # Check if condition is satisfied
             if condition == Condition.GT:
                 if compared_value > value:
@@ -248,11 +286,27 @@ class Bet(object):
         else:
             return False, 0  # Default don't skip the bet
 
+    def calculate_sho_bet(self, index):
+        low_odd_points = self.outcomes[1 - index][OutcomeKeys.TOTAL_POINTS]
+        high_odd_points = self.outcomes[index][OutcomeKeys.TOTAL_POINTS]
+        if high_odd_points <= 50:  # in case no one bet
+            return 50
+        else:
+            target_odd = self.settings.target_odd
+            if self.outcomes[index][OutcomeKeys.ODDS] > (target_odd * 2):
+                # don't bet too much if odds is too high
+                target_odd = self.outcomes[index][OutcomeKeys.ODDS] / 2
+            return int((low_odd_points / (target_odd - 1)) - high_odd_points)
+
     def calculate(self, balance: int) -> dict:
         self.decision = {"choice": None, "amount": 0, "id": None}
-        if self.settings.strategy == Strategy.MOST_VOTED:
+        if self.settings.only_doubt:
+            self.decision["choice"] = "B"
+        elif self.settings.strategy == Strategy.MOST_VOTED:
             self.decision["choice"] = self.__return_choice(OutcomeKeys.TOTAL_USERS)
         elif self.settings.strategy == Strategy.HIGH_ODDS:
+            self.decision["choice"] = self.__return_choice(OutcomeKeys.ODDS)
+        elif self.settings.strategy == Strategy.SMART_HIGH_ODDS:
             self.decision["choice"] = self.__return_choice(OutcomeKeys.ODDS)
         elif self.settings.strategy == Strategy.PERCENTAGE:
             self.decision["choice"] = self.__return_choice(OutcomeKeys.ODDS_PERCENTAGE)
@@ -270,10 +324,17 @@ class Bet(object):
         if self.decision["choice"] is not None:
             index = char_decision_as_index(self.decision["choice"])
             self.decision["id"] = self.outcomes[index]["id"]
-            self.decision["amount"] = min(
-                int(balance * (self.settings.percentage / 100)),
-                self.settings.max_points,
-            )
+            if self.settings.strategy == Strategy.SMART_HIGH_ODDS:
+                self.decision["amount"] = min(
+                    self.calculate_sho_bet(index),
+                    int(balance * (self.settings.percentage / 100)),
+                    self.settings.max_points,
+                )
+            else:
+                self.decision["amount"] = min(
+                    int(balance * (self.settings.percentage / 100)),
+                    self.settings.max_points,
+                )
             if (
                 self.settings.stealth_mode is True
                 and self.decision["amount"]
