@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from TwitchChannelPointsMiner.classes.AnalyticsServer import AnalyticsServer
-from TwitchChannelPointsMiner.classes.Chat import ThreadChat
+from TwitchChannelPointsMiner.classes.Chat import ChatPresence, ThreadChat
 from TwitchChannelPointsMiner.classes.entities.PubsubTopic import PubsubTopic
 from TwitchChannelPointsMiner.classes.entities.Streamer import (
     Streamer,
@@ -180,7 +180,7 @@ class TwitchChannelPointsMiner:
                         streamer.settings.bet = set_default_settings(
                             streamer.settings.bet, Settings.streamer_settings.bet
                         )
-                        if streamer.settings.join_chat is True:
+                        if streamer.settings.chat != ChatPresence.NEVER:
                             streamer.irc_chat = ThreadChat(
                                 self.username,
                                 self.twitch.twitch_login.get_auth_token(),
@@ -297,7 +297,10 @@ class TwitchChannelPointsMiner:
         logger.info("CTRL+C Detected! Please wait just a moment!")
 
         for streamer in self.streamers:
-            if streamer.irc_chat is not None:
+            if (
+                streamer.irc_chat is not None
+                and streamer.settings.chat != ChatPresence.NEVER
+            ):
                 streamer.leave_chat()
                 if streamer.irc_chat.is_alive() is True:
                     streamer.irc_chat.join()

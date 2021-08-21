@@ -1,5 +1,6 @@
 import logging
 import time
+from enum import Enum, auto
 from threading import Thread
 
 from irc.bot import SingleServerIRCBot
@@ -7,6 +8,16 @@ from irc.bot import SingleServerIRCBot
 from TwitchChannelPointsMiner.constants import IRC, IRC_PORT
 
 logger = logging.getLogger(__name__)
+
+
+class ChatPresence(Enum):
+    ALWAYS = auto()
+    NEVER = auto()
+    ONLINE = auto()
+    OFFLINE = auto()
+
+    def __str__(self):
+        return self.name
 
 
 class ClientIRC(SingleServerIRCBot):
