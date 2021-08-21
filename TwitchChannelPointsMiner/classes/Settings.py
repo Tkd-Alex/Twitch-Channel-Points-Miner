@@ -5,6 +5,7 @@ class Priority(Enum):
     ORDER = auto()
     STREAK = auto()
     DROPS = auto()
+    SUBSCRIBED = auto()
     POINTS_ASCENDING = auto()
     POINTS_DESCEDING = auto()
 

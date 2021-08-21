@@ -1,7 +1,7 @@
 import logging
 import os
 import platform
-from datetime import datetime
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 import emoji
@@ -144,9 +144,16 @@ def configure_loggers(username, settings):
         Path(logs_path).mkdir(parents=True, exist_ok=True)
         logs_file = os.path.join(
             logs_path,
-            f"{username}.{datetime.now().strftime('%Y%m%d-%H%M%S')}.log",
+            f"{username}.log",
         )
-        file_handler = logging.FileHandler(logs_file, "w", "utf-8")
+        file_handler = TimedRotatingFileHandler(
+            logs_file,
+            when="D",
+            interval=1,
+            backupCount=7,
+            encoding="utf-8",
+            delay=False,
+        )
         file_handler.setFormatter(
             logging.Formatter(
                 fmt="%(asctime)s - %(levelname)s - %(name)s - [%(funcName)s]: %(message)s",

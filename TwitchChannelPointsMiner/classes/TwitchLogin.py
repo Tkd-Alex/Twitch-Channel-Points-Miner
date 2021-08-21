@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class TwitchLogin(object):
-    __self__ = [
+    __slots__ = [
         "client_id",
         "token",
         "login_check_result",

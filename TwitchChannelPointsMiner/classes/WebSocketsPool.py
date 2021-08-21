@@ -110,7 +110,7 @@ class WebSocketsPool:
         logger.error(f"#{ws.index} - WebSocket error: {error}")
 
     @staticmethod
-    def on_close(ws):
+    def on_close(ws, close_status_code, close_reason):
         logger.info(f"#{ws.index} - WebSocket closed")
         # On close please reconnect automatically
         WebSocketsPool.handle_reconnection(ws)
@@ -247,7 +247,9 @@ class WebSocketsPool:
                                     event_dict["prediction_window_seconds"]
                                 )
                                 # Reduce prediction window by 3/6s - Collect more accurate data for decision
-                                prediction_window_seconds -= random.uniform(3, 6)
+                                prediction_window_seconds = ws.streamers[
+                                    streamer_index
+                                ].get_prediction_window(prediction_window_seconds)
                                 event = EventPrediction(
                                     ws.streamers[streamer_index],
                                     event_id,

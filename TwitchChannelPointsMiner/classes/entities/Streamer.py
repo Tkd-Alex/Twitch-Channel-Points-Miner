@@ -6,7 +6,7 @@ from datetime import datetime
 from threading import Lock
 
 from TwitchChannelPointsMiner.classes.Chat import ThreadChat
-from TwitchChannelPointsMiner.classes.entities.Bet import BetSettings
+from TwitchChannelPointsMiner.classes.entities.Bet import BetSettings, DelayMode
 from TwitchChannelPointsMiner.classes.entities.Stream import Stream
 from TwitchChannelPointsMiner.classes.Settings import Settings
 from TwitchChannelPointsMiner.constants import URL
@@ -70,6 +70,7 @@ class Streamer(object):
         "channel_points",
         "minute_watched_requests",
         "viewer_is_mod",
+        "activeMultipliers",
         "irc_chat",
         "stream",
         "raid",
@@ -89,6 +90,7 @@ class Streamer(object):
         self.channel_points = 0
         self.minute_watched_requests = None
         self.viewer_is_mod = False
+        self.activeMultipliers = None
         self.irc_chat = None
 
         self.stream = Stream()
@@ -167,6 +169,33 @@ class Streamer(object):
             and self.stream.drops_tags is True
             and self.stream.campaigns_ids != []
         )
+
+    def viewer_has_points_multiplier(self):
+        return self.activeMultipliers is not None and len(self.activeMultipliers) > 0
+
+    def total_points_multiplier(self):
+        return (
+            sum(
+                map(
+                    lambda x: x["factor"],
+                    self.activeMultipliers,
+                ),
+            )
+            if self.activeMultipliers is not None
+            else 0
+        )
+
+    def get_prediction_window(self, prediction_window_seconds):
+        delay_mode = self.settings.bet.delay_mode
+        delay = self.settings.bet.delay
+        if delay_mode == DelayMode.FROM_START:
+            return min(delay, prediction_window_seconds)
+        elif delay_mode == DelayMode.FROM_END:
+            return max(prediction_window_seconds - delay, 0)
+        elif delay_mode == DelayMode.PERCENTAGE:
+            return prediction_window_seconds * delay
+        else:
+            return prediction_window_seconds
 
     # === ANALYTICS === #
     def persistent_annotations(self, event_type, event_text):
