@@ -8,7 +8,7 @@ from threading import Lock
 from TwitchChannelPointsMiner.classes.Chat import ThreadChat
 from TwitchChannelPointsMiner.classes.entities.Bet import BetSettings, DelayMode
 from TwitchChannelPointsMiner.classes.entities.Stream import Stream
-from TwitchChannelPointsMiner.classes.Settings import Settings
+from TwitchChannelPointsMiner.classes.Settings import Events, Settings
 from TwitchChannelPointsMiner.constants import URL
 from TwitchChannelPointsMiner.utils import _millify
 
@@ -122,7 +122,7 @@ class Streamer(object):
             f"{self} is Offline!",
             extra={
                 "emoji": ":sleeping:",
-                "color": Settings.logger.color_palette.STREAMER_OFFLINE,
+                "event": Events.STREAMER_OFFLINE,
             },
         )
 
@@ -137,7 +137,7 @@ class Streamer(object):
             f"{self} is Online!",
             extra={
                 "emoji": ":partying_face:",
-                "color": Settings.logger.color_palette.STREAMER_ONLINE,
+                "event": Events.STREAMER_ONLINE,
             },
         )
 

@@ -21,7 +21,7 @@ from TwitchChannelPointsMiner.classes.Exceptions import (
     StreamerDoesNotExistException,
     StreamerIsOfflineException,
 )
-from TwitchChannelPointsMiner.classes.Settings import Priority, Settings
+from TwitchChannelPointsMiner.classes.Settings import Events, Priority, Settings
 from TwitchChannelPointsMiner.classes.TwitchLogin import TwitchLogin
 from TwitchChannelPointsMiner.constants import API, CLIENT_ID, GQLOperations
 from TwitchChannelPointsMiner.utils import (
@@ -180,7 +180,7 @@ class Twitch(object):
 
             logger.info(
                 f"Joining raid from {streamer} to {raid.target_login}!",
-                extra={"emoji": ":performing_arts:"},
+                extra={"emoji": ":performing_arts:", "event": Events.JOIN_RAID},
             )
 
     def viewer_is_mod(self, streamer):
@@ -362,14 +362,22 @@ class Twitch(object):
                                         drop.has_preconditions_met is not False
                                         and drop.is_printable is True
                                     ):
-                                        # print("=" * 125)
                                         logger.info(
-                                            f"{streamers[index]} is streaming {streamers[index].stream}"
+                                            f"{streamers[index]} is streaming {streamers[index].stream}",
+                                            extra={"event": Events.DROP_STATUS},
                                         )
-                                        logger.info(f"Campaign: {campaign}")
-                                        logger.info(f"Drop: {drop}")
-                                        logger.info(f"{drop.progress_bar()}")
-                                        # print("=" * 125)
+                                        logger.info(
+                                            f"Campaign: {campaign}",
+                                            extra={"event": Events.DROP_STATUS},
+                                        )
+                                        logger.info(
+                                            f"Drop: {drop}",
+                                            extra={"event": Events.DROP_STATUS},
+                                        )
+                                        logger.info(
+                                            f"{drop.progress_bar()}",
+                                            extra={"event": Events.DROP_STATUS},
+                                        )
 
                     except requests.exceptions.ConnectionError as e:
                         logger.error(f"Error while trying to send minute watched: {e}")
@@ -412,7 +420,7 @@ class Twitch(object):
             f"Going to complete bet for {event}",
             extra={
                 "emoji": ":four_leaf_clover:",
-                "color": Settings.logger.color_palette.BET_GENERAL,
+                "event": Events.BET_GENERAL,
             },
         )
         if event.status == "ACTIVE":
@@ -422,14 +430,14 @@ class Twitch(object):
                     f"Skip betting for the event {event}",
                     extra={
                         "emoji": ":pushpin:",
-                        "color": Settings.logger.color_palette.BET_FILTERS,
+                        "event": Events.BET_FILTERS,
                     },
                 )
                 logger.info(
                     f"Skip settings {event.bet.settings.filter_condition}, current value is: {compared_value}",
                     extra={
                         "emoji": ":pushpin:",
-                        "color": Settings.logger.color_palette.BET_FILTERS,
+                        "event": Events.BET_FILTERS,
                     },
                 )
             else:
@@ -438,7 +446,7 @@ class Twitch(object):
                         f"Place {_millify(decision['amount'])} channel points on: {event.bet.get_outcome(selector_index)}",
                         extra={
                             "emoji": ":four_leaf_clover:",
-                            "color": Settings.logger.color_palette.BET_GENERAL,
+                            "event": Events.BET_GENERAL,
                         },
                     )
 
@@ -479,14 +487,15 @@ class Twitch(object):
                 f"Oh no! The event is not active anymore! Current status: {event.status}",
                 extra={
                     "emoji": ":disappointed_relieved:",
-                    "color": Settings.logger.color_palette.BET_FAILED,
+                    "event": Events.BET_FAILED,
                 },
             )
 
     def claim_bonus(self, streamer, claim_id):
         if Settings.logger.less is False:
             logger.info(
-                f"Claiming the bonus for {streamer}!", extra={"emoji": ":gift:"}
+                f"Claiming the bonus for {streamer}!",
+                extra={"emoji": ":gift:", "event": Events.BONUS_CLAIM},
             )
 
         json_data = copy.deepcopy(GQLOperations.ClaimCommunityPoints)
@@ -568,7 +577,9 @@ class Twitch(object):
         return campaigns
 
     def claim_drop(self, drop):
-        logger.info(f"Claim {drop}", extra={"emoji": ":package:"})
+        logger.info(
+            f"Claim {drop}", extra={"emoji": ":package:", "event": Events.DROP_CLAIM}
+        )
 
         json_data = copy.deepcopy(GQLOperations.DropsPage_ClaimDropRewards)
         json_data["variables"] = {"input": {"dropInstanceID": drop.drop_instance_id}}

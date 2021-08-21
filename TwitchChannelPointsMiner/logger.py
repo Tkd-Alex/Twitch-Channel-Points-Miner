@@ -7,62 +7,21 @@ from pathlib import Path
 import emoji
 from colorama import Fore, init
 
+from TwitchChannelPointsMiner.classes.Settings import Events
+from TwitchChannelPointsMiner.classes.Telegram import Telegram
 from TwitchChannelPointsMiner.utils import remove_emoji
-
-
-class GlobalFormatter(logging.Formatter):
-    def __init__(self, *, fmt, datefmt=None, print_emoji=True, print_colored=False):
-        self.print_emoji = print_emoji
-        self.print_colored = print_colored
-        logging.Formatter.__init__(self, fmt=fmt, datefmt=datefmt)
-
-    def format(self, record):
-        record.emoji_is_present = (
-            record.emoji_is_present if hasattr(record, "emoji_is_present") else False
-        )
-        if (
-            hasattr(record, "emoji")
-            and self.print_emoji is True
-            and record.emoji_is_present is False
-        ):
-            record.msg = emoji.emojize(
-                f"{record.emoji}  {record.msg.strip()}", use_aliases=True
-            )
-            record.emoji_is_present = True
-
-        if self.print_emoji is False:
-            if "\u2192" in record.msg:
-                record.msg = record.msg.replace("\u2192", "-->")
-
-            # With the update of Stream class, the Stream Title may contain emoji
-            # Full remove using a method from utils.
-            record.msg = remove_emoji(record.msg)
-
-        if self.print_colored and hasattr(record, "color"):
-            record.msg = f"{record.color}{record.msg}"
-
-        return super().format(record)
 
 
 # Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 class ColorPalette(object):
-    STREAMER_ONLINE = Fore.RESET
-    STREAMER_OFFLINE = Fore.RESET
-
-    GAIN_FOR_RAID = Fore.RESET
-    GAIN_FOR_CLAIM = Fore.RESET
-    GAIN_FOR_WATCH = Fore.RESET
-    GAIN_FOR_WATCH_STREAK = Fore.RESET
-
-    BET_WIN = Fore.GREEN
-    BET_LOSE = Fore.RED
-    BET_REFUND = Fore.RESET
-    BET_FILTERS = Fore.RESET
-    BET_GENERAL = Fore.RESET
-    BET_FAILED = Fore.RESET
-    BET_START = Fore.RESET
-
     def __init__(self, **kwargs):
+        # Init with default values RESET for all and GREEN and RED only for WIN and LOSE bet
+        # Then set args from kwargs
+        for k in Events:
+            setattr(self, str(k), Fore.RESET)
+        setattr(self, "BET_WIN", Fore.GREEN)
+        setattr(self, "BET_LOSE", Fore.RED)
+
         for k in kwargs:
             if k.upper() in dir(self) and getattr(self, k.upper()) is not None:
                 if kwargs[k] in [
@@ -91,11 +50,22 @@ class ColorPalette(object):
                     setattr(self, k.upper(), getattr(Fore, kwargs[k].upper()))
 
     def get(self, key):
-        color = getattr(self, key.upper()) if key.upper() in dir(self) else None
+        color = getattr(self, str(key)) if str(key) in dir(self) else None
         return Fore.RESET if color is None else color
 
 
 class LoggerSettings:
+    __slots__ = [
+        "save",
+        "less",
+        "console_level",
+        "file_level",
+        "emoji",
+        "colored",
+        "color_palette",
+        "telegram",
+    ]
+
     def __init__(
         self,
         save: bool = True,
@@ -105,6 +75,7 @@ class LoggerSettings:
         emoji: bool = platform.system() != "Windows",
         colored: bool = False,
         color_palette: ColorPalette = ColorPalette(),
+        telegram: Telegram or None = None,
     ):
         self.save = save
         self.less = less
@@ -113,6 +84,46 @@ class LoggerSettings:
         self.emoji = emoji
         self.colored = colored
         self.color_palette = color_palette
+        self.telegram = telegram
+
+
+class GlobalFormatter(logging.Formatter):
+    def __init__(self, *, fmt, settings: LoggerSettings, datefmt=None):
+        self.settings = settings
+        logging.Formatter.__init__(self, fmt=fmt, datefmt=datefmt)
+
+    def format(self, record):
+        record.emoji_is_present = (
+            record.emoji_is_present if hasattr(record, "emoji_is_present") else False
+        )
+        if (
+            hasattr(record, "emoji")
+            and self.settings.emoji is True
+            and record.emoji_is_present is False
+        ):
+            record.msg = emoji.emojize(
+                f"{record.emoji}  {record.msg.strip()}", use_aliases=True
+            )
+            record.emoji_is_present = True
+
+        if self.settings.emoji is False:
+            if "\u2192" in record.msg:
+                record.msg = record.msg.replace("\u2192", "-->")
+
+            # With the update of Stream class, the Stream Title may contain emoji
+            # Full remove using a method from utils.
+            record.msg = remove_emoji(record.msg)
+
+        if hasattr(record, "event"):
+            if self.settings.telegram is not None:
+                self.settings.telegram.send(record.msg, record.event)
+
+            if self.settings.colored is True:
+                record.msg = (
+                    f"{self.settings.color_palette.get(record.event)}{record.msg}"
+                )
+
+        return super().format(record)
 
 
 def configure_loggers(username, settings):
@@ -134,8 +145,7 @@ def configure_loggers(username, settings):
             datefmt=(
                 "%d/%m/%y %H:%M:%S" if settings.less is False else "%d/%m %H:%M:%S"
             ),
-            print_emoji=settings.emoji,
-            print_colored=settings.colored,
+            settings=settings,
         )
     )
 

@@ -179,7 +179,8 @@ import logging
 from colorama import Fore
 from TwitchChannelPointsMiner import TwitchChannelPointsMiner
 from TwitchChannelPointsMiner.logger import LoggerSettings, ColorPalette
-from TwitchChannelPointsMiner.classes.Settings import Priority
+from TwitchChannelPointsMiner.classes.Telegram import Telegram
+from TwitchChannelPointsMiner.classes.Settings import Priority, Events
 from TwitchChannelPointsMiner.classes.entities.Bet import Strategy, BetSettings, Condition, OutcomeKeys, FilterCondition, DelayMode
 from TwitchChannelPointsMiner.classes.entities.Streamer import Streamer, StreamerSettings
 
@@ -203,6 +204,12 @@ twitch_miner = TwitchChannelPointsMiner(
             STREAMER_online="GREEN",            # Don't worry about lower/upper case. The script will parse all the values.
             streamer_offline="red",             # Read more in README.md
             BET_wiN=Fore.MAGENTA                # Color allowed are: [BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET].
+        ),
+        telegram=Telegram(                                                          # You can omit or leave None if you don't want to receive updates on Telegram
+            chat_id=123456789,                                                      # Chat ID to send messages @GiveChatId
+            token="123456789:shfuihreuifheuifhiu34578347",                          # Telegram API token @BotFather
+            events=[Events.STREAMER_ONLINE, Events.STREAMER_OFFLINE, "BET_LOSE"],   # Only these events will be sent to the chat
+            disable_notification=True,                                              # Revoke the notification (sound/vibration)
         )
     ),
     streamer_settings=StreamerSettings(
@@ -217,9 +224,9 @@ twitch_miner = TwitchChannelPointsMiner(
             percentage_gap=20,                  # Gap difference between outcomesA and outcomesB (for SMART stragegy)
             max_points=50000,                   # If the x percentage of your channel points is gt bet_max_points set this value
             stealth_mode=True,                  # If the calculated amount of channel points is GT the highest bet, place the highest value minus 1-2 points #33
-           delay_mode=DelayMode.FROM_END,       # When placing a bet, we will wait until `delay` seconds before the end of the timer
-           delay=6,
-           filter_condition=FilterCondition(
+            delay_mode=DelayMode.FROM_END,       # When placing a bet, we will wait until `delay` seconds before the end of the timer
+            delay=6,
+            filter_condition=FilterCondition(
                 by=OutcomeKeys.TOTAL_USERS,    # Where apply the filter. Allowed [PERCENTAGE_USERS, ODDS_PERCENTAGE, ODDS, TOP_POINTS, TOTAL_USERS, TOTAL_POINTS]
                 where=Condition.LTE,           # 'by' must be [GT, LT, GTE, LTE] than value
                 value=800
@@ -297,24 +304,10 @@ You can combine all priority but keep in mind that use `ORDER` and `POINTS_ASCEN
 | `emoji`         	| bool            	| For Windows is False else True 	                                  | On Windows, we have a problem printing emoji. Set to false if you have a problem      	                                                                                                  |
 | `colored`         | bool            	| True 	                                                              | If you want to print colored text [#45](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/45) [#82](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/82) |
 | `color_palette`   | ColorPalette      | All messages are Fore.RESET except WIN and LOSE bet (GREEN and RED) | Create your custom color palette. Read more above.      	                                                                                                                              |
+| `telegram`        | Telegram          | None                                                                | (Optional) Receive Telegram updates for multiple events list [#233](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/233)                                                           |
 
 #### Color Palette
-Now you can customize the color of the terminal message. We have created a default ColorPalette that provide all the message with `DEFAULT (RESET)` color and the `BET_WIN` and `BET_LOSE` message `GREEN` and `RED` respectively.
-Currently you can only change the following types of messages:
- - `STREAMER_ONLINE`
- - `STREAMER_OFFLINE`
- - `GAIN_FOR_RAID`
- - `GAIN_FOR_CLAIM`
- - `GAIN_FOR_WATCH`
- - `BET_WIN`
- - `BET_LOSE`
- - `BET_REFUND`
- - `BET_FILTERS`
- - `BET_GENERAL`
- - `BET_FAILED`
- - `BET_START`
-
-The colors allowed are all the Fore color from Colorama: `BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.`
+Now you can customize the color of the terminal message. We have created a default ColorPalette that provide all the message with `DEFAULT (RESET)` color and the `BET_WIN` and `BET_LOSE` message `GREEN` and `RED` respectively. You can change the colors of all `Events` enum class. The colors allowed are all the Fore color from Colorama: `BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.`
 The script was developed to handle all the human error, lower-case upper case and more, but I want to suggest using the following code-style
 ```python
 from colorama import Fore
@@ -334,6 +327,46 @@ ColorPalette(
 )
 ```
 
+#### Telegram
+If you want to receive logs update on Telegram initiate a new Telegram class, else leave omit this parameter or set as None.
+1. Create a bot with [BotFather](https://t.me/botfather)
+2. Get you `chat_id` with [GiveChatId](https://t.me/GiveChatId_Bot)
+
+| Key                	 | Type            	| Default 	| Description                                                        |
+|----------------------- |-----------------	|---------	|------------------------------------------------------------------- |
+| `chat_id`         	 | int        	    |           | Chat ID to send messages @GiveChatId                               |
+| `token`       	     | string           |        	| Telegram API token @BotFather                                      |
+| `events`   	         | list             |       	| Only these events will be sent to the chat. Array of Event. or str |
+| `disable_notification` | bool             | false   	| Revoke the notification (sound/vibration)                          |
+
+
+```python
+Telegram(
+    chat_id=123456789,
+    token="123456789:shfuihreuifheuifhiu34578347",
+    events=[Events.STREAMER_ONLINE, Events.STREAMER_OFFLINE, "BET_LOSE"],
+    disable_notification=True,
+)
+```
+
+#### Events
+ - `STREAMER_ONLINE`
+ - `STREAMER_OFFLINE`
+ - `GAIN_FOR_RAID`
+ - `GAIN_FOR_CLAIM`
+ - `GAIN_FOR_WATCH`
+ - `BET_WIN`
+ - `BET_LOSE`
+ - `BET_REFUND`
+ - `BET_FILTERS`
+ - `BET_GENERAL`
+ - `BET_FAILED`
+ - `BET_START`
+ - `BONUS_CLAIM`
+ - `JOIN_RAID`
+ - `DROP_CLAIM`
+ - `DROP_STATUS`
+
 ### StreamerSettings
 | Key                	| Type        	| Default                        	| Description                                                                                                                                          	                                                                            |
 |--------------------	|-------------	|--------------------------------	|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -350,9 +383,9 @@ ColorPalette(
 | `percentage_gap`   	| int             	| 20      	| Gap difference between outcomesA and outcomesB (for SMART stragegy)                                            	                                                                          |
 | `max_points`       	| int             	| 50000   	| If the x percentage of your channel points is GT bet_max_points set this value                                 	                                                                          |
 | `stealth_mode`     	| bool            	| False   	| If the calculated amount of channel points is GT the highest bet, place the highest value minus 1-2 points [#33](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/33)      |
-| `join_chat` 	        | bool 	            	| True    	| Join IRC-Chat to appear online in chat and attempt to get StreamElements channel points and increase view-time  [#47](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/47) |
-| `delay_mode` 	        | DelayMode         	| FROM_END	| Define how is calculating the waiting time before placing a bet |
-| `delay` 	        | float             	| 6     	| Value to be used to calculate bet delay depending on `delay_mode` value |
+| `join_chat` 	        | bool 	            | True    	| Join IRC-Chat to appear online in chat and attempt to get StreamElements channel points and increase view-time  [#47](https://github.com/Tkd-Alex/Twitch-Channel-Points-Miner-v2/issues/47) |
+| `delay_mode` 	        | DelayMode         | FROM_END	| Define how is calculating the waiting time before placing a bet                                                                                                                             |
+| `delay` 	            | float             | 6     	| Value to be used to calculate bet delay depending on `delay_mode` value                                                                                                                     |
 
 #### Bet strategy
 
