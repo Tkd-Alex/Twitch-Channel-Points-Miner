@@ -220,7 +220,6 @@ class Streamer(object):
 
     def __save_json(self, key, data={}, event_type="Watch"):
         # https://stackoverflow.com/questions/4676195/why-do-i-need-to-multiply-unix-timestamps-by-1000-in-javascript
-        # data.update({"x": round(time.time() * 1000)})
         now = datetime.now().replace(microsecond=0)
         data.update({"x": round(datetime.timestamp(now) * 1000)})
 

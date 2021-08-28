@@ -1,0 +1,55 @@
+html,
+body {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+a {
+    text-decoration: none;
+}
+
+.tabs ul {
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    flex-grow: 0px;
+}
+
+.tabs {
+    max-height: 500px;
+    overflow-y: auto;
+    direction: rtl;
+}
+
+.checkbox-label {
+    font-size: 20px;
+    padding-left: 15px;
+    font-weight: bold
+}
+
+::-webkit-scrollbar {
+    width: 20px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d6dee1;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d6dee1;
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d6dee1;
+    border-radius: 20px;
+    border: 6px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #a8bbbf;
+}
