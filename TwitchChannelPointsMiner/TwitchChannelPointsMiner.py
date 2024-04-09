@@ -133,6 +133,7 @@ class TwitchChannelPointsMiner:
         refresh: int = 5,
         days_ago: int = 7,
     ):
+        days_ago = days_ago if days_ago <= 365*15 else 365*15
         http_server = AnalyticsServer(
             host=host, port=port, refresh=refresh, days_ago=days_ago
         )
